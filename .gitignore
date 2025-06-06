@@ -16,8 +16,6 @@ coverage/
 # Local env files
 .env
 
-# Build output
-dist/
 
 test-dir1/
 test-dir2/
