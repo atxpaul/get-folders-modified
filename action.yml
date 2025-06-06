@@ -8,6 +8,10 @@ inputs:
     description: 'Comma-separated list of directories to exclude'
     required: false
     default: ''
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
 outputs:
   changed-dirs:
     description: 'JSON array of changed directories'
@@ -26,8 +30,10 @@ runs:
 
     - name: Run the action
       shell: bash
-      working-directory: ${{ github.action_path }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      working-directory: ${{ github.workspace }}
       run: |
-        node dist/index.js \
+        node ${{ github.action_path }}/dist/index.js \
           --base-directory "${{ inputs.base-directory }}" \
           --exclude-dirs "${{ inputs.exclude-dirs }}" 
