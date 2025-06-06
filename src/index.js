@@ -5,12 +5,28 @@ import path from 'path';
 
 async function run() {
     try {
-        let baseDirectory = core.getInput('base-directory');
-        const excludeDirs = core
-            .getInput('exclude-dirs')
-            .split(',')
-            .map(dir => dir.trim())
-            .filter(dir => dir.length > 0);
+        // Get command line arguments
+        const args = process.argv.slice(2);
+        let baseDirectory = '';
+        let excludeDirs = [];
+
+        // Parse command line arguments
+        for (let i = 0; i < args.length; i++) {
+            if (args[i] === '--base-directory' && i + 1 < args.length) {
+                baseDirectory = args[i + 1];
+                i++;
+            } else if (args[i] === '--exclude-dirs' && i + 1 < args.length) {
+                excludeDirs = args[i + 1]
+                    .split(',')
+                    .map(dir => dir.trim())
+                    .filter(dir => dir.length > 0);
+                i++;
+            }
+        }
+
+        if (!baseDirectory) {
+            throw new Error('base-directory is required');
+        }
 
         // Normalize baseDirectory to always have a trailing slash
         if (!baseDirectory.endsWith('/')) {
