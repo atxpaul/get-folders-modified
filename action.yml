@@ -12,6 +12,19 @@ outputs:
   changed-dirs:
     description: 'JSON array of changed directories'
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
-  pre: 'npm ci && npm run build' 
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Build TypeScript
+      shell: bash
+      run: npm run build
+
+    - name: Run the action
+      shell: bash
+      run: |
+        node dist/index.js \
+          --base-directory "${{ inputs.base-directory }}" \
+          --exclude-dirs "${{ inputs.exclude-dirs }}" 
