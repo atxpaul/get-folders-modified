@@ -13,4 +13,5 @@ outputs:
     description: 'JSON array of changed directories'
 runs:
   using: 'node20'
+  pre: 'npm ci'
   main: 'src/index.js' 
