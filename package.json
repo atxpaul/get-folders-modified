@@ -1,0 +1,24 @@
+{
+    "name": "get-changed-directories",
+    "version": "1.0.0",
+    "description": "GitHub Action to get changed directories",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "ncc build src/index.js -o dist",
+        "test": "jest"
+    },
+    "keywords": [
+        "github-actions",
+        "changed-directories"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@actions/core": "^1.10.0",
+        "@actions/github": "^5.1.1"
+    },
+    "devDependencies": {
+        "@vercel/ncc": "^0.36.1",
+        "jest": "^29.5.0"
+    }
+}

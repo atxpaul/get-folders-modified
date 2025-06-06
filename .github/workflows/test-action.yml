@@ -1,0 +1,28 @@
+name: Test Changed Directories Action
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    workflow_dispatch: # This allows manual triggering
+
+jobs:
+    test-action:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Get Changed Directories
+              id: get-changed-dirs
+              uses: ./
+              with:
+                  base-directory: 'src'
+                  exclude-dirs: 'node_modules,dist'
+
+            - name: Show Changed Directories
+              run: |
+                  echo "Changed directories:"
+                  echo '${{ steps.get-changed-dirs.outputs.changed-dirs }}' | jq -r '.[]'

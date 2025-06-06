@@ -1,0 +1,17 @@
+name: 'Get Changed Directories'
+description: 'Returns a list of directories that have been changed in the repository'
+inputs:
+  base-directory:
+    description: 'The base directory to check for changes'
+    required: true
+  exclude-dirs:
+    description: 'Comma-separated list of directories to exclude'
+    required: false
+    default: ''
+outputs:
+  changed-dirs:
+    description: 'JSON array of changed directories'
+    value: ${{ steps.get-changed-dirs.outputs.changed-dirs }}
+runs:
+  using: 'node16'
+  main: 'dist/index.js' 
