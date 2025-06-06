@@ -105,6 +105,26 @@ async function run() {
 
 function getChangedFilesWithGit() {
     try {
+        // First try to get the diff using the GitHub context
+        if (process.env.GITHUB_ACTIONS === 'true' && github.context.payload) {
+            const context = github.context;
+            let base, head;
+
+            if (context.eventName === 'pull_request') {
+                base = context.payload.pull_request.base.sha;
+                head = context.payload.pull_request.head.sha;
+            } else if (context.eventName === 'push') {
+                base = context.payload.before;
+                head = context.payload.after;
+            }
+
+            if (base && head) {
+                const output = execSync(`git diff --name-only ${base} ${head}`).toString();
+                return output.split('\n').filter(Boolean);
+            }
+        }
+
+        // If we can't get the diff using context, try HEAD~1
         const output = execSync('git diff --name-only HEAD~1 HEAD').toString();
         return output.split('\n').filter(Boolean);
     } catch (error) {
