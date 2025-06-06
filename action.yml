@@ -13,5 +13,5 @@ outputs:
     description: 'JSON array of changed directories'
     value: ${{ steps.get-changed-dirs.outputs.changed-dirs }}
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js' 
