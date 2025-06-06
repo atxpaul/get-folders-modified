@@ -19,8 +19,8 @@ async function run() {
 
         let changedFiles = [];
 
-        // Check if we're running in GitHub Actions and have a valid context
-        if (process.env.GITHUB_ACTIONS === 'true' && github.context.payload) {
+        // Always try GitHub API first when running in GitHub Actions
+        if (process.env.GITHUB_ACTIONS === 'true') {
             try {
                 // Get the token from the environment
                 const token = process.env.GITHUB_TOKEN;
@@ -43,7 +43,19 @@ async function run() {
                     base = context.payload.before;
                     head = context.payload.after;
                 } else {
-                    throw new Error(`Unsupported event type: ${context.eventName}`);
+                    // For other events, try to get the last two commits
+                    const commits = await octokit.rest.repos.listCommits({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        per_page: 2,
+                    });
+
+                    if (commits.data.length >= 2) {
+                        base = commits.data[1].sha;
+                        head = commits.data[0].sha;
+                    } else {
+                        throw new Error('Could not determine base and head commits');
+                    }
                 }
 
                 // Get the list of changed files
@@ -56,12 +68,19 @@ async function run() {
 
                 changedFiles = response.data.files.map(file => file.filename);
             } catch (error) {
-                // Fall back to git commands if GitHub API fails
-                changedFiles = getChangedFilesWithGit();
+                core.warning(`GitHub API failed: ${error.message}. Falling back to file listing.`);
+                // If GitHub API fails, list all files in the base directory
+                changedFiles = listAllFiles(baseDirectory);
             }
         } else {
-            // Running locally or GitHub context is not available, use git commands
-            changedFiles = getChangedFilesWithGit();
+            // Running locally, use git commands
+            try {
+                const output = execSync('git diff --name-only HEAD~1 HEAD').toString();
+                changedFiles = output.split('\n').filter(Boolean);
+            } catch (error) {
+                core.warning(`Git command failed: ${error.message}. Falling back to file listing.`);
+                changedFiles = listAllFiles(baseDirectory);
+            }
         }
 
         // Get unique directories that have changed
@@ -95,43 +114,18 @@ async function run() {
         // Convert Set to Array and set output
         const changedDirsArray = Array.from(changedDirs);
         core.setOutput('changed-dirs', JSON.stringify(changedDirsArray));
-
-        // Log the changed directories
-        // (Removed debug output for production)
     } catch (error) {
         core.setFailed(error.message);
     }
 }
 
-function getChangedFilesWithGit() {
+function listAllFiles(baseDirectory) {
     try {
-        // First try to get the diff using the GitHub context
-        if (process.env.GITHUB_ACTIONS === 'true' && github.context.payload) {
-            const context = github.context;
-            let base, head;
-
-            if (context.eventName === 'pull_request') {
-                base = context.payload.pull_request.base.sha;
-                head = context.payload.pull_request.head.sha;
-            } else if (context.eventName === 'push') {
-                base = context.payload.before;
-                head = context.payload.after;
-            }
-
-            if (base && head) {
-                const output = execSync(`git diff --name-only ${base} ${head}`).toString();
-                return output.split('\n').filter(Boolean);
-            }
-        }
-
-        // If we can't get the diff using context, try HEAD~1
-        const output = execSync('git diff --name-only HEAD~1 HEAD').toString();
-        return output.split('\n').filter(Boolean);
-    } catch (error) {
-        // If we can't get the diff, assume all files in the base directory have changed
-        const baseDirectory = core.getInput('base-directory');
         const output = execSync(`find ${baseDirectory} -type f`).toString();
         return output.split('\n').filter(Boolean);
+    } catch (error) {
+        core.warning(`Failed to list files: ${error.message}`);
+        return [];
     }
 }
 
